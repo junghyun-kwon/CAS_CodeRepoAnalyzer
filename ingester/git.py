@@ -84,7 +84,7 @@ class Git():
         sexp = 0                                    # changes made previous by author in same subsystem
         totalLOCModified = 0                        # Total modified LOC across all files
         nuc = 0                                     # number of unique changes to the files
-        filesSeen = ""                              # files seen in change/commit
+        files_seen = []                             # files seen in change/commit
 
         for stat in stats:
 
@@ -189,7 +189,7 @@ class Git():
             la += fileLa
             ld += fileLd
             nf += 1
-            filesSeen += fileName + ",CAS_DELIMITER,"
+            files_seen.append(fileName)
 
         # End stats loop
 
@@ -214,7 +214,7 @@ class Git():
         # Add stat properties to the commit object
         stat_properties['la'] = str(la)
         stat_properties['ld'] = str(ld)
-        stat_properties['fileschanged'] = filesSeen[0:-1]
+        stat_properties['fileschanged'] = json.dumps(files_seen)
         stat_properties['nf'] = str(nf)
         stat_properties['ns'] = str(ns)
         stat_properties['nd'] = str(nd)
