@@ -214,11 +214,11 @@ class Git():
         # Add stat properties to the commit object
         stat_properties['la'] = str(la)
         stat_properties['ld'] = str(ld)
-        stat_properties['filesChanged'] = filesSeen[0:-1]
+        stat_properties['fileschanged'] = filesSeen[0:-1]
         stat_properties['nf'] = str(nf)
         stat_properties['ns'] = str(ns)
         stat_properties['nd'] = str(nd)
-        stat_properties['enthropy'] = str(entrophy)
+        stat_properties['entrophy'] = str(entrophy)
         stat_properties['ndev'] = str(ndev)
         stat_properties['lt'] = str(lt)
         stat_properties['nuc'] = str(nuc)
@@ -293,7 +293,7 @@ class Git():
                 if key == 'parent_hashes':
                     # Check to see if this is a merge change. Fix for Issue #26. 
                     # Detects merges by counting the # of parent commits
-                    
+
                     parents = value.split(' ')
                     if len(parents) == 2:
                         isMerge = True
