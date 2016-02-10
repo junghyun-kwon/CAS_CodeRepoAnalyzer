@@ -29,6 +29,33 @@ Additional Instructions are available in SETUP.md
 * GNU grep
 * MonthDelta
 
+###Setting up python3.3 virtual env on Fedora
+
+    sudo yum install wget R python3-devel readline-devel
+    
+    wget https://bootstrap.pypa.io/ez_setup.py
+    sudo python3 ez_setup.py
+    
+    sudo python3 -m easy_install pip
+    sudo python3 -m easy_install virtualenv
+
+virtualenv --no-site-packages --distribute -p /usr/bin/python3 ~/.virtualenvs/pywork3
+
+Now, we are finally ready to set up our virtual environment:
+
+    virtualenv -p /usr/bin/python3 ~/pyVirtual/cas
+
+To activate the virtual env:
+
+    source ~/pyVirtual/cas/bin/activate
+
+    pip install sqlalchemy
+    pip install py-postgresql
+    pip install requests
+    pip install python-dateutil
+    pip install http://pypi.python.org/packages/source/M/MonthDelta/MonthDelta-1.0b.tar.bz2
+    
+
 ###Setting up python3.3 virtual env on Ubuntu
 * Assumes you are working on Ubuntu 12.04
 
@@ -85,7 +112,7 @@ source /path/to/new/virtual/environemnt/bin/activate
 
 Type `deactiviate` to exit the virtual env
 
-###Installing rpy2
+####Installing rpy2
 * Assumes you are working on Ubuntu 12.04 and python 3.3
 
 Getting rpy2 to work can be a bit tricky. First, make sure R is installed. To do this, first
@@ -111,7 +138,7 @@ Now we are ready to install rpy2. Make sure python version 3 or greater is in us
 pip install rpy2
 ```
 
-###Additional Pip Packages
+####Additional Pip Packages
 Install the following packages by doing `pip install `  and then the package
 name. Make sure you are using python3, such as using a virtualenv if using Ubuntu.
 
