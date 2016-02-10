@@ -5,6 +5,7 @@ import logging
 import math                               # Required for the math.log function
 from ingester.commitFile import *         # Represents a file
 from classifier.classifier import *       # Used for classifying each commit
+from config import *
 import time
 
 """
@@ -44,7 +45,11 @@ class Git():
     RESET_CMD = 'git reset --hard FETCH_HEAD'
     CLEAN_CMD = 'git clean -df' # f for force clean, d for untracked directories
 
-    REPO_DIRECTORY = "/CASRepos/git/"        # directory in which to store repositories
+    # directory in which to store repositories
+    if config['repo_location']['location'] and config['repo_location']['location'] != "":
+        REPO_DIRECTORY = config['repo_location']['location']
+    else:
+        REPO_DIRECTORY = os.path.dirname(__file__) + "/CASRepos/git/"
 
     def getCommitStatsProperties( stats, commitFiles, devExperience, author, unixTimeStamp ):
         """
@@ -370,7 +375,7 @@ class Git():
         pre-conditions: The repo has already been created
         """
 
-        repo_dir = os.path.dirname(__file__) + self.REPO_DIRECTORY + repo.id
+        repo_dir = self.REPO_DIRECTORY + repo.id
 
         # Weird sceneario where something in repo gets modified - reset all changes before pulling
         subprocess.call(self.RESET_CMD, shell=True, cwd= repo_dir)
