@@ -42,12 +42,12 @@ class Git():
 
     CLONE_CMD = 'git clone {!s} {!s}'     # git clone command w/o downloading src code
     PULL_CMD = 'git pull'      # git pull command
-    RESET_CMD = 'git reset --hard FETCH_HEAD'
+    RESET_CMD = 'git reset --hard HEAD'
     CLEAN_CMD = 'git clean -df' # f for force clean, d for untracked directories
 
     # directory in which to store repositories
     if config['repo_location']['location'] and config['repo_location']['location'] != "":
-        REPO_DIRECTORY = config['repo_location']['location']
+        REPO_DIRECTORY = config['repo_location']['location'] + "/"
     else:
         REPO_DIRECTORY = os.path.dirname(__file__) + "/CASRepos/git/"
 
@@ -243,7 +243,7 @@ class Git():
             ingestion date
         description: a very basic abstraction for using git in python.
         """
-        repo_dir = os.chdir(os.path.dirname(__file__) + self.REPO_DIRECTORY + repo.id)
+        repo_dir = self.REPO_DIRECTORY + repo.id
         logging.info('Getting/parsing git commits: '+ str(repo) )
 
         # Spawn a git process and convert the output to a string
@@ -350,7 +350,7 @@ class Git():
         arguments: repo Repository: the repository to clone
         pre-conditions: The repo has not been already created
         """
-        repo_dir = os.chdir(os.path.dirname(__file__) + self.REPO_DIRECTORY)
+        repo_dir = self.REPO_DIRECTORY
 
         # Run the clone command and return the results
 

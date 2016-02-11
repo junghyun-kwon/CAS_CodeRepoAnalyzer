@@ -53,7 +53,7 @@ class LocalRepository():
         # Cache the start date to set later
         self.start_date = str(datetime.now().replace(microsecond=0))
 
-        path = os.path.dirname(__file__) + self.adapter.REPO_DIRECTORY + self.repo.id
+        path = self.adapter.REPO_DIRECTORY + self.repo.id
         # See if repo has already been downloaded, if it is pull, if not clone
         if os.path.isdir(path):
             self.adapter.pull(self.adapter, self.repo)
