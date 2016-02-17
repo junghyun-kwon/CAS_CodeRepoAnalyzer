@@ -5,6 +5,7 @@ import logging
 import math                               # Required for the math.log function
 from ingester.commitFile import *         # Represents a file
 from classifier.classifier import *       # Used for classifying each commit
+from config import *
 import time
 
 """
@@ -41,10 +42,14 @@ class Git():
 
     CLONE_CMD = 'git clone {!s} {!s}'     # git clone command w/o downloading src code
     PULL_CMD = 'git pull'      # git pull command
-    RESET_CMD = 'git reset --hard FETCH_HEAD'
+    RESET_CMD = 'git reset --hard HEAD'
     CLEAN_CMD = 'git clean -df' # f for force clean, d for untracked directories
 
-    REPO_DIRECTORY = "/CASRepos/git/"        # directory in which to store repositories
+    # directory in which to store repositories
+    if config['repo_location']['location'] and config['repo_location']['location'] != "":
+        REPO_DIRECTORY = config['repo_location']['location'] + "/"
+    else:
+        REPO_DIRECTORY = os.path.dirname(__file__) + "/CASRepos/git/"
 
     def getCommitStatsProperties( stats, commitFiles, devExperience, author, unixTimeStamp ):
         """
@@ -60,7 +65,7 @@ class Git():
         @param unixTimeStamp    Time of the commit
         """
 
-        statProperties = ""
+        stat_properties = dict()
 
         # Data structures to keep track of info needed for stats
         subsystemsSeen = []                         # List of system names seen
@@ -84,7 +89,7 @@ class Git():
         sexp = 0                                    # changes made previous by author in same subsystem
         totalLOCModified = 0                        # Total modified LOC across all files
         nuc = 0                                     # number of unique changes to the files
-        filesSeen = ""                              # files seen in change/commit
+        files_seen = []                             # files seen in change/commit
 
         for stat in stats:
 
@@ -189,7 +194,7 @@ class Git():
             la += fileLa
             ld += fileLd
             nf += 1
-            filesSeen += fileName + ",CAS_DELIMITER,"
+            files_seen.append(fileName)
 
         # End stats loop
 
@@ -212,22 +217,22 @@ class Git():
                 entrophy -= ( avg * math.log( avg,2 ) )
 
         # Add stat properties to the commit object
-        statProperties += ',"la":"' + str( la ) + '\"'
-        statProperties += ',"ld":"' + str( ld ) + '\"'
-        statProperties += ',"fileschanged":"' + filesSeen[0:-1] + '\"'
-        statProperties += ',"nf":"' + str( nf ) + '\"'
-        statProperties += ',"ns":"' + str( ns ) + '\"'
-        statProperties += ',"nd":"' + str( nd ) + '\"'
-        statProperties += ',"entrophy":"' + str(  entrophy ) + '\"'
-        statProperties += ',"ndev":"' + str( ndev ) + '\"'
-        statProperties += ',"lt":"' + str( lt ) + '\"'
-        statProperties += ',"nuc":"' + str( nuc ) + '\"'
-        statProperties += ',"age":"' + str( age ) + '\"'
-        statProperties += ',"exp":"' + str( exp ) + '\"'
-        statProperties += ',"rexp":"' + str( rexp ) + '\"'
-        statProperties += ',"sexp":"' + str( sexp ) + '\"'
+        stat_properties['la'] = str(la)
+        stat_properties['ld'] = str(ld)
+        stat_properties['fileschanged'] = json.dumps(files_seen)
+        stat_properties['nf'] = str(nf)
+        stat_properties['ns'] = str(ns)
+        stat_properties['nd'] = str(nd)
+        stat_properties['entrophy'] = str(entrophy)
+        stat_properties['ndev'] = str(ndev)
+        stat_properties['lt'] = str(lt)
+        stat_properties['nuc'] = str(nuc)
+        stat_properties['age'] = str(age)
+        stat_properties['exp'] = str(exp)
+        stat_properties['rexp'] = str(rexp)
+        stat_properties['sexp'] = str(sexp)
 
-        return statProperties
+        return stat_properties
     # End stats
 
     def log(self, repo, firstSync):
@@ -238,7 +243,7 @@ class Git():
             ingestion date
         description: a very basic abstraction for using git in python.
         """
-        repo_dir = os.chdir(os.path.dirname(__file__) + self.REPO_DIRECTORY + repo.id)
+        repo_dir = self.REPO_DIRECTORY + repo.id
         logging.info('Getting/parsing git commits: '+ str(repo) )
 
         # Spawn a git process and convert the output to a string
@@ -279,65 +284,59 @@ class Git():
 
             prettyCommit = splitCommitStat[0]
             statCommit = splitCommitStat[1]
-            commitObject = ""
+            commit_object = {}
 
             # Start with the commit info (i.e., commit hash, author, date, subject, etc)
             prettyInfo = prettyCommit.split(',CAS_READER_PROP_DELIMITER2    "')
             for propValue in prettyInfo:
                 props = propValue.split('"CAS_READER_PROP_DELIMITER: "')
-                propStr = ''
-                for prop in props:
-                    prop = prop.replace('\\','').replace("\\n", '')  # avoid escapes & newlines for JSON formatting
-                    propStr = propStr + '"' + prop.replace('"','') + '":'
 
-                values = propStr[0:-1].split(":")
+                # avoid escapes & newlines for JSON formatting
+                key = props[0].replace('\\', '').replace("\\n", '').replace('"', '').strip(' ')
+                value = props[1].replace('\\', '').replace("\\n", '').replace('"', '').strip(' ')
 
-                if(values[0] == '"    parent_hashes"'):
+                if key == 'parent_hashes':
                     # Check to see if this is a merge change. Fix for Issue #26. 
                     # Detects merges by counting the # of parent commits
-                    
-                    parents = values[1].split(' ')
+
+                    parents = value.split(' ')
                     if len(parents) == 2:
                         isMerge = True
 
-                if(values[0] == '"author_name"'):
-                    author = values[1].replace('"', '')
+                if key == 'author_name':
+                    author = value.replace('"', '')
 
-                if(values[0] == '"author_date_unix_timestamp"'):
-                    unixTimeStamp = values[1].replace('"','')
+                if key == 'author_date_unix_timestamp':
+                    unixTimeStamp = value.replace('"', '')
 
                 # Classify the commit
-                if(values[0] == '"commit_message"'):
+                if key == 'commit_message':
 
-                    if (isMerge):
+                    if isMerge:
                         classification = "Merge"
                     else:
-                        classification = classifier.categorize(values[1].lower())
+                        classification = classifier.categorize(value.lower())
 
                     # If it is a corrective commit, we induce it fixes a bug somewhere in the system
                     if classification == "Corrective":
                         fix = True
 
-
-                commitObject += "," + propStr[0:-1]
+                commit_object[key] = value
                 # End property loop
             # End pretty info loop
 
             # Get the stat properties
             stats = statCommit.split("\\n")
-            commitObject += self.getCommitStatsProperties(stats, commitFiles, devExperience, author, unixTimeStamp)
+            commit_object.update(self.getCommitStatsProperties(stats, commitFiles, devExperience, author, unixTimeStamp))
 
             # Update the classification of the commit
-            commitObject += ',"classification":"' + str( classification ) + '\"'
+            commit_object['classification'] = str(classification)
 
-             # Update whether commit was a fix or not
-            commitObject += ',"fix":"' + str( fix ) + '\"'
-
-            # Remove first comma and extra space
-            commitObject = commitObject[1:].replace('    ','')
+            # Update whether commit was a fix or not
+            commit_object['fix'] = str(fix)
 
             # Add commit object to json_list
-            json_list.append(json.loads('{' + commitObject + '}'))
+            json_list.append(commit_object)
         # End commit loop
 
         logging.info('Done getting/parsing git commits.')
@@ -351,7 +350,7 @@ class Git():
         arguments: repo Repository: the repository to clone
         pre-conditions: The repo has not been already created
         """
-        repo_dir = os.chdir(os.path.dirname(__file__) + self.REPO_DIRECTORY)
+        repo_dir = self.REPO_DIRECTORY
 
         # Run the clone command and return the results
 
@@ -376,7 +375,7 @@ class Git():
         pre-conditions: The repo has already been created
         """
 
-        repo_dir = os.path.dirname(__file__) + self.REPO_DIRECTORY + repo.id
+        repo_dir = self.REPO_DIRECTORY + repo.id
 
         # Weird sceneario where something in repo gets modified - reset all changes before pulling
         subprocess.call(self.RESET_CMD, shell=True, cwd= repo_dir)

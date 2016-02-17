@@ -16,6 +16,8 @@ import threading
 import time
 from monthdelta import MonthDelta
 
+BACKGROUND_INTERVAL = 600  # wait 10 minutes
+
 class CAS_Manager(threading.Thread):
 	""" 
 	Thread that continiously checks if there is work to be done and adds it to
@@ -189,7 +191,7 @@ class CAS_Manager(threading.Thread):
 			self.checkAnalyzation()
 			self.checkModel()
 			self.checkBuildModel()
-			time.sleep(10)
+			time.sleep(BACKGROUND_INTERVAL)
 
 class Worker(threading.Thread):
 	"""Thread executing tasks from a given tasks queue"""

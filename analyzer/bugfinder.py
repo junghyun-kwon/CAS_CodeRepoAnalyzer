@@ -10,6 +10,7 @@ import re
 from orm.commit import *
 from caslogging import logging
 from analyzer.git_commit_linker import *
+import json
 
 class BugFinder:
 	"""
@@ -74,12 +75,21 @@ class BugFinder:
 		if issue_opened is not None:
 			bug_introduced_prior = issue_opened
 
-		correctiveFiles = correctiveCommit.fileschanged.split(",CAS_DELIMITER,")
+		if 'CAS_DELIMITER' in correctiveCommit.fileschanged:
+			# Provide legacy support for the previous fileschanged format
+			correctiveFiles = correctiveCommit.fileschanged.split(",CAS_DELIMITER,")
+		else:
+			correctiveFiles = json.loads(correctiveCommit.fileschanged)
 
 		for commit in self.allCommits:
 
 			if int(commit.author_date_unix_timestamp) < int(bug_introduced_prior):
-				commitFiles = commit.fileschanged.split(",CAS_DELIMITER,")
+
+				if 'CAS_DELIMITER' in commit.fileschanged:
+					# Provide legacy support for the previous fileschanged format
+					commitFiles = commit.fileschanged.split(",CAS_DELIMITER,")
+				else:
+					commitFiles = json.loads(commit.fileschanged)
 
 				for commitFile in commitFiles:
 
