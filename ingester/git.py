@@ -258,7 +258,7 @@ class Git():
 
         # Spawn a git process and convert the output to a string
         if repo.last_ingested_commit:
-            cmd = 'git log %s..HEAD' % repo.last_ingested_commit
+            cmd = 'git log %s..HEAD ' % repo.last_ingested_commit
         else:
             cmd = 'git log '
 
