@@ -6,7 +6,7 @@ import logging
 import math                               # Required for the math.log function
 from ingester.commitFile import *         # Represents a file
 from classifier.classifier import *       # Used for classifying each commit
-from config import *
+from config import REPO_DIRECTORY, config
 import time
 
 """
@@ -47,12 +47,6 @@ class Git():
     CLEAN_CMD = 'git clean -df' # f for force clean, d for untracked directories
 
     HEAD_COMMIT_HASH_CMD = 'git rev-parse HEAD'
-
-    # directory in which to store repositories
-    if config['repo_location']['location'] and config['repo_location']['location'] != "":
-        REPO_DIRECTORY = config['repo_location']['location'] + "/"
-    else:
-        REPO_DIRECTORY = os.path.dirname(__file__) + "/CASRepos/git/"
 
     def getCommitStatsProperties(self, stats, commitFiles, devExperience, author, unixTimeStamp ):
         """
@@ -247,15 +241,11 @@ class Git():
         repository_path = self.__repository_directory_path__(repository)
         raw_head_hash = str(subprocess.check_output(self.HEAD_COMMIT_HASH_CMD, shell=True, cwd=repository_path))
 
-        head_had_match = self.COMMIT_HASH_REGEX_PATTERN.match(raw_head_hash)
-
         if len(raw_head_hash) > 40:
             return raw_head_hash.replace("b'", "")[:40]
         else:
             logging.error("Head commit cannot be extracted from : %s" % repository.name)
             return None
-
-        # return str(subprocess.check_output(self.HEAD_COMMIT_HASH_CMD, shell=True, cwd=repository_path))
 
     def log(self, repo):
         """
@@ -373,7 +363,7 @@ class Git():
         arguments: repo Repository: the repository to clone
         pre-conditions: The repo has not been already created
         """
-        repo_dir = self.REPO_DIRECTORY
+        repo_dir = REPO_DIRECTORY
 
         # Run the clone command and return the results
 
@@ -422,4 +412,4 @@ class Git():
         :param repository:
         :return: repository path
         """
-        return self.REPO_DIRECTORY + repository.id
+        return os.path.join(REPO_DIRECTORY, repository.id)

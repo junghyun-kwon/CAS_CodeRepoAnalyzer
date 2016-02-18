@@ -20,14 +20,12 @@ class GitCommitLinker:
   track down the bug-introducing changes
   """
 
-  REPO_DIR = "ingester/CASRepos/git/" # locations where repo directories are stored
-
   def __init__(self, repoId):
     """
     constructor
     sets the repository path.
     """
-    self.repo_path = os.path.join(os.path.dirname(__file__), '..', self.REPO_DIR + repoId)
+    self.repo_path = os.path.join(REPO_DIRECTORY, repoId)
     self.repo_id = repoId
 
   def linkCorrectiveCommits(self, corrective_commits, all_commits):
