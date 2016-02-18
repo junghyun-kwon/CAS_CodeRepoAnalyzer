@@ -10,7 +10,8 @@ from datetime import datetime
 import os
 import logging
 
-class LocalRepository():
+
+class LocalRepository:
     """
     Repository():
     description: Abstracts the actions done on a repository
@@ -18,6 +19,8 @@ class LocalRepository():
     repo = None
     adapter = None
     start_date = None
+    head_commit_hash = None
+
     def __init__(self, repo):
         """
         __init__(path): String -> NoneType
@@ -26,7 +29,7 @@ class LocalRepository():
         self.repo = repo
 
         # Temporary until other Repo types are added
-        self.adapter = Git
+        self.adapter = Git()
 
         self.commits = {}
 
@@ -37,11 +40,12 @@ class LocalRepository():
         """
 
         # TODO: Error checking.
-        firstSync = self.syncRepoFiles()
-        self.syncCommits(firstSync)
+        self.syncRepoFiles()
+        self.syncCommits()
 
         # Set the date AFTER it has been ingested and synced.
         self.repo.ingestion_date = self.start_date
+        self.repo.last_ingested_commit = self.head_commit_hash
 
     def syncRepoFiles(self):
         """
@@ -56,28 +60,29 @@ class LocalRepository():
         path = self.adapter.REPO_DIRECTORY + self.repo.id
         # See if repo has already been downloaded, if it is pull, if not clone
         if os.path.isdir(path):
-            self.adapter.pull(self.adapter, self.repo)
-            firstSync = False
+            self.adapter.pull(self.repo)
         else:
-            self.adapter.clone(self.adapter, self.repo)
-            firstSync = True
+            self.adapter.clone(self.repo)
 
-        return firstSync
-
-    def syncCommits(self, firstSync):
+    def syncCommits(self):
         """
         syncCommits():
         description: Makes each commit dictonary into an object and then
             inserts them into the database
-        arguments: firstSync Boolean: whether to sync all commits or after the
-            ingestion date
         """
-        commits = self.adapter.log(self.adapter, self.repo, firstSync)
+        commits = self.adapter.log(self.repo)
+        self.head_commit_hash = self.adapter.repository_head_commit(self.repo)
+
         commitsSession = Session()
         logging.info('Saving commits to the database...')
         for commitDict in commits:
-            commitDict['repository_id'] = self.repo.id
-            commitsSession.merge(Commit(commitDict))
+
+            # We have already ingested the previous commit so we don't want to add it again
+            if self.repo.last_ingested_commit:
+                pass
+            # commitDict['repository_id'] = self.repo.id
+            # commitsSession.merge(Commit(commitDict))
+            commitsSession.add(Commit(commitDict))
         commitsSession.commit()
         commitsSession.close()
         logging.info('Done saving commits to the database.')

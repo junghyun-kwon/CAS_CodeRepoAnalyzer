@@ -14,7 +14,10 @@ class Commit(Base):
     """
     __tablename__ = 'commits'
 
-    commit_hash = Column(String, primary_key=True)
+    # Many-to-One Relation to repositories table
+    repository_id = Column(String)
+    commit_hash = Column(String)
+
     author_name  = Column(String)
     author_date_unix_timestamp  = Column(String)
     author_email  = Column(String)
@@ -33,7 +36,7 @@ class Commit(Base):
     entrophy = Column(Float, unique=False, default=0)
     la = Column(Float, unique=False, default=0)
     ld = Column(Float, unique=False, default=0)
-    fileschanged = Column(String, unique=False, default="NULL")
+    fileschanged = Column(String, unique=False, default="[]")
     lt = Column(Float, unique=False, default=0)
     ndev = Column(Float, unique=False, default=0)
     age = Column(Float, unique=False, default=0)
@@ -45,8 +48,10 @@ class Commit(Base):
     # The linear regression probability of commit containing bug
     glm_probability = Column(Float, unique=False, default=0)
 
-    # Many-to-One Relation to repositories table
-    repository_id = Column(String)
+    __table_args__ = (
+        PrimaryKeyConstraint('repository_id', 'commit_hash'),
+        {},
+    )
 
     def __init__(self, commitDict):
         """

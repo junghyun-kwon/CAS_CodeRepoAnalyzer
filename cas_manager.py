@@ -16,7 +16,7 @@ import threading
 import time
 from monthdelta import MonthDelta
 
-BACKGROUND_INTERVAL = 600  # wait 10 minutes
+BACKGROUND_INTERVAL = 60  # wait 1 minutes
 
 class CAS_Manager(threading.Thread):
 	""" 

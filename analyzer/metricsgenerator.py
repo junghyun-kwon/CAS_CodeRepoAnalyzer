@@ -59,7 +59,14 @@ class MetricsGenerator:
 		else:
 			dir_of_datasets = current_dir + "/datasets/monthly/"
 
-		with open(dir_of_datasets + self.repo_id + ".csv", "w") as file:
+		# If a directory is contained in repo path we need to make sure that the directory exists
+		if self.repo_id.find("/") >= 0:
+			repo_folder = self.repo_id[:self.repo_id.rindex("/")]
+			repo_path = os.path.join(dir_of_datasets, repo_folder)
+			if not os.path.exists(repo_path):
+				os.makedirs(repo_path)
+
+		with open(os.path.join(dir_of_datasets, self.repo_id + ".csv"), "w") as file:
 			csv_writer = csv.writer(file, dialect="excel")
 			columns = Commit.__table__.columns.keys()
 

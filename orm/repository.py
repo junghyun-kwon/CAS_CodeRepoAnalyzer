@@ -8,6 +8,7 @@ import uuid
 from db import *
 from datetime import datetime
 
+
 class Repository(Base):
     """
     Commit():
@@ -21,6 +22,7 @@ class Repository(Base):
 
     creation_date = Column(String)
     ingestion_date = Column(String)
+    last_ingested_commit = Column(String)
     analysis_date = Column(String)
     status = Column(String)
     email = Column(String)

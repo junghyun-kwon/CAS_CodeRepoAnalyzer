@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import json
 import logging
@@ -45,13 +46,15 @@ class Git():
     RESET_CMD = 'git reset --hard HEAD'
     CLEAN_CMD = 'git clean -df' # f for force clean, d for untracked directories
 
+    HEAD_COMMIT_HASH_CMD = 'git rev-parse HEAD'
+
     # directory in which to store repositories
     if config['repo_location']['location'] and config['repo_location']['location'] != "":
         REPO_DIRECTORY = config['repo_location']['location'] + "/"
     else:
         REPO_DIRECTORY = os.path.dirname(__file__) + "/CASRepos/git/"
 
-    def getCommitStatsProperties( stats, commitFiles, devExperience, author, unixTimeStamp ):
+    def getCommitStatsProperties(self, stats, commitFiles, devExperience, author, unixTimeStamp ):
         """
         getCommitStatsProperties
         Helper method for log. Caclulates statistics for each change/commit and
@@ -235,20 +238,37 @@ class Git():
         return stat_properties
     # End stats
 
-    def log(self, repo, firstSync):
+    def repository_head_commit(self, repository):
+        """
+        Returns the hash of the head commit of a specified repository
+        :param repository:
+        :return:
+        """
+        repository_path = self.__repository_directory_path__(repository)
+        raw_head_hash = str(subprocess.check_output(self.HEAD_COMMIT_HASH_CMD, shell=True, cwd=repository_path))
+
+        head_had_match = self.COMMIT_HASH_REGEX_PATTERN.match(raw_head_hash)
+
+        if len(raw_head_hash) > 40:
+            return raw_head_hash.replace("b'", "")[:40]
+        else:
+            logging.error("Head commit cannot be extracted from : %s" % repository.name)
+            return None
+
+        # return str(subprocess.check_output(self.HEAD_COMMIT_HASH_CMD, shell=True, cwd=repository_path))
+
+    def log(self, repo):
         """
         log(): Repository, Boolean -> Dictionary
         arguments: repo Repository: the repository to clone
-                   firstSync Boolean: whether to sync all commits or after the
-            ingestion date
         description: a very basic abstraction for using git in python.
         """
-        repo_dir = self.REPO_DIRECTORY + repo.id
+        repo_dir = self.__repository_directory_path__(repo)
         logging.info('Getting/parsing git commits: '+ str(repo) )
 
         # Spawn a git process and convert the output to a string
-        if not firstSync and repo.ingestion_date is not None:
-            cmd = 'git log --after="' + repo.ingestion_date + '" '
+        if repo.last_ingested_commit:
+            cmd = 'git log %s..HEAD' % repo.last_ingested_commit
         else:
             cmd = 'git log '
 
@@ -335,6 +355,9 @@ class Git():
             # Update whether commit was a fix or not
             commit_object['fix'] = str(fix)
 
+            # Assign the commit to it's repository
+            commit_object['repository_id'] = repo.id
+
             # Add commit object to json_list
             json_list.append(commit_object)
         # End commit loop
@@ -375,7 +398,7 @@ class Git():
         pre-conditions: The repo has already been created
         """
 
-        repo_dir = self.REPO_DIRECTORY + repo.id
+        repo_dir = self.__repository_directory_path__(repo)
 
         # Weird sceneario where something in repo gets modified - reset all changes before pulling
         subprocess.call(self.RESET_CMD, shell=True, cwd= repo_dir)
@@ -392,3 +415,11 @@ class Git():
 
         # TODO: only return true on success, else return false
         return True
+
+    def __repository_directory_path__(self, repository):
+        """
+        Return the full path to the directory that contains the git repository
+        :param repository:
+        :return: repository path
+        """
+        return self.REPO_DIRECTORY + repository.id

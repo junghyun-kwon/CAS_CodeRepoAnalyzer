@@ -50,7 +50,14 @@ class LinearRegressionModel:
     num_buggy = getattr(self.metrics, "num_buggy")
     num_nonbuggy = getattr(self.metrics, "num_nonbuggy")
 
-    with open(dir_of_datasets + self.repo_id + ".csv", "w") as file:
+    # If a directory is contained in repo path we need to make sure that the directory exists
+    if self.repo_id.find("/") >= 0:
+      repo_folder = self.repo_id[:self.repo_id.rindex("/")]
+      repo_path = os.path.join(dir_of_datasets, repo_folder)
+      if not os.path.exists(repo_path):
+        os.makedirs(repo_path)
+
+    with open(os.path.join(dir_of_datasets, self.repo_id + ".csv"), "w") as file:
       csv_writer = csv.writer(file, dialect="excel")
 
       # write the columns
@@ -155,7 +162,7 @@ class LinearRegressionModel:
     formula_metrics = []
     current_dir = os.path.dirname(__file__)
     dir_of_datasets = current_dir + "/datasets/"
-    self.data = self.readcsv(dir_of_datasets + self.repo_id + ".csv", header=True, sep = ",")
+    self.data = self.readcsv(os.path.join(dir_of_datasets, self.repo_id + ".csv"), header=True, sep = ",")
 
     for metric in metrics_list:
       if self._isMetricSignificant(formula_metrics, metric):
