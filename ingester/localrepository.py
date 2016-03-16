@@ -6,6 +6,7 @@ description: Holds the repository abstraction class
 """
 from ingester.git import *
 from orm.commit import *
+from orm.file import *
 from datetime import datetime
 import os
 import logging
@@ -82,7 +83,14 @@ class LocalRepository:
                 pass
             # commitDict['repository_id'] = self.repo.id
             # commitsSession.merge(Commit(commitDict))
+            logging.info("Preparing to save repo %s commit %s" % (commitDict["repository_id"], commitDict["commit_hash"]))
             commitsSession.add(Commit(commitDict))
+            if 'fileschanged' in commitDict:
+                for file_changed in json.loads(commitDict['fileschanged']):
+                    commitsSession.add(File({"repository_id": commitDict["repository_id"],
+                                             "commit_hash": commitDict["commit_hash"],
+                                             "file_name": file_changed}))
+
         commitsSession.commit()
         commitsSession.close()
         logging.info('Done saving commits to the database.')

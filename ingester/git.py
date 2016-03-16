@@ -337,7 +337,8 @@ class Git():
 
             # Get the stat properties
             stats = statCommit.split("\\n")
-            commit_object.update(self.getCommitStatsProperties(stats, commitFiles, devExperience, author, unixTimeStamp))
+            commit_stats = self.getCommitStatsProperties(stats, commitFiles, devExperience, author, unixTimeStamp)
+            commit_object.update(commit_stats)
 
             # Update the classification of the commit
             commit_object['classification'] = str(classification)
